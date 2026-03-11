@@ -1,0 +1,1246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kalshi Edge Scanner</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-1: #0d0b14;
+  --bg-2: #120d1e;
+  --bg-3: #181228;
+  --glass: rgba(255,255,255,0.055);
+  --glass-border: rgba(255,255,255,0.1);
+  --glass-hover: rgba(255,255,255,0.085);
+  --glow-green: #00e87a;
+  --glow-green-dim: rgba(0,232,122,0.15);
+  --glow-green-mid: rgba(0,232,122,0.3);
+  --glow-amber: #f59e0b;
+  --glow-amber-dim: rgba(245,158,11,0.15);
+  --glow-blue: #6366f1;
+  --glow-blue-dim: rgba(99,102,241,0.15);
+  --glow-red: #f43f5e;
+  --glow-red-dim: rgba(244,63,94,0.15);
+  --glow-salmon: #fa8072;
+  --glow-salmon-dim: rgba(250,128,114,0.15);
+  --text: #f0eeff;
+  --text-secondary: rgba(240,238,255,0.55);
+  --text-tertiary: rgba(240,238,255,0.3);
+  --radius: 18px;
+  --radius-sm: 10px;
+  --radius-pill: 100px;
+}
+
+/* ── Light mode ── */
+html.light {
+  --bg-1: #ffffff;
+  --bg-2: #f5f5f7;
+  --bg-3: #ebebed;
+  --glass: rgba(255,255,255,0.7);
+  --glass-border: rgba(200,150,130,0.2);
+  --glass-hover: rgba(255,255,255,0.85);
+  --glow-green: #00a854;
+  --glow-green-dim: rgba(0,168,84,0.12);
+  --glow-green-mid: rgba(0,168,84,0.25);
+  --glow-amber: #c07800;
+  --glow-amber-dim: rgba(192,120,0,0.1);
+  --glow-blue: #4f52d0;
+  --glow-blue-dim: rgba(79,82,208,0.1);
+  --glow-red: #d42e4a;
+  --glow-red-dim: rgba(212,46,74,0.1);
+  --glow-salmon: #e05a48;
+  --glow-salmon-dim: rgba(224,90,72,0.12);
+  --text: #0f0f0f;
+  --text-secondary: rgba(0,0,0,0.5);
+  --text-tertiary: rgba(0,0,0,0.3);
+}
+
+html { background: #0d0b14; transition: background 0.3s; }
+html.light { background: #ffffff; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Outfit', sans-serif;
+  background: var(--bg-1);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  transition: background 0.3s, color 0.3s;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 20% -10%, rgba(250,128,114,0.20) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 85% 15%, rgba(250,100,90,0.14) 0%, transparent 55%),
+    radial-gradient(ellipse 50% 40% at 50% 90%, rgba(0,232,122,0.08) 0%, transparent 55%);
+  pointer-events: none;
+  z-index: 0;
+  transition: background 0.4s, opacity 0.4s;
+}
+
+html.light body { background: #ffffff; }
+html.light body::before { opacity: 0; pointer-events: none; }
+
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.4;
+}
+
+.page { position: relative; z-index: 1; max-width: 1080px; margin: 0 auto; padding: 36px 24px 80px; }
+
+.glass {
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: var(--radius);
+  transition: background 0.3s, border-color 0.3s, box-shadow 0.3s;
+}
+
+html.light .glass {
+  background: #ffffff;
+  border-color: rgba(0,0,0,0.08);
+  box-shadow: 0 1px 8px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.04);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 36px; flex-wrap: wrap; gap: 16px;
+}
+.brand { display: flex; align-items: center; gap: 12px; }
+.brand-icon {
+  width: 40px; height: 40px;
+  background: linear-gradient(135deg, var(--glow-green), #00b359);
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+  box-shadow: 0 0 20px rgba(0,232,122,0.35);
+}
+.brand-name { font-size: 21px; font-weight: 700; letter-spacing: -0.5px; }
+.brand-name span { color: var(--glow-green); }
+
+.live-pill {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 16px;
+  font-size: 13px; font-weight: 500;
+  color: var(--text-secondary);
+}
+.live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-tertiary); }
+.live-dot.on { background: var(--glow-green); box-shadow: 0 0 8px var(--glow-green); animation: pulse-dot 1.8s infinite; }
+@keyframes pulse-dot { 0%,100%{opacity:1;box-shadow:0 0 8px var(--glow-green)} 50%{opacity:0.5;box-shadow:0 0 4px var(--glow-green)} }
+#live-label { font-weight: 600; color: var(--text); }
+#live-timer { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--glow-green); }
+
+.tabs { display: flex; gap: 4px; padding: 5px; margin-bottom: 28px; width: fit-content; }
+.tab {
+  padding: 9px 22px; border-radius: var(--radius-sm); border: none;
+  background: transparent; color: var(--text-secondary);
+  font-family: 'Outfit', sans-serif; font-size: 14px; font-weight: 600;
+  cursor: pointer; transition: all 0.22s; letter-spacing: 0.1px;
+}
+.tab.active { background: rgba(255,255,255,0.1); color: var(--text); box-shadow: inset 0 1px 0 rgba(255,255,255,0.15); }
+.tab:hover:not(.active) { color: var(--text); background: rgba(255,255,255,0.05); }
+
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+.api-card { padding: 22px 24px; margin-bottom: 16px; }
+.api-top { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.api-top h3 { font-size: 15px; font-weight: 700; }
+.api-badge {
+  font-size: 11px; font-weight: 600; letter-spacing: 0.3px;
+  background: var(--glow-amber-dim); color: var(--glow-amber);
+  padding: 2px 9px; border-radius: var(--radius-pill);
+  border: 1px solid rgba(245,158,11,0.25);
+}
+.api-card p { font-size: 13px; color: var(--text-secondary); margin-bottom: 16px; line-height: 1.65; }
+.api-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.api-row input {
+  flex: 1; min-width: 200px;
+  background: rgba(0,0,0,0.25); border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm); color: var(--text);
+  font-family: 'JetBrains Mono', monospace; font-size: 13px; padding: 11px 14px;
+  outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+}
+.api-row input::placeholder { color: var(--text-tertiary); }
+.api-row input:focus { border-color: rgba(0,232,122,0.4); box-shadow: 0 0 0 3px rgba(0,232,122,0.08); }
+
+.btn {
+  padding: 10px 20px; border-radius: var(--radius-sm); border: none;
+  font-family: 'Outfit', sans-serif; font-size: 14px; font-weight: 600;
+  cursor: pointer; transition: all 0.2s;
+  display: inline-flex; align-items: center; gap: 6px; letter-spacing: 0.1px;
+}
+.btn-green {
+  background: linear-gradient(135deg, var(--glow-green), #00b359); color: #000;
+  box-shadow: 0 4px 16px rgba(0,232,122,0.3), 0 1px 0 rgba(255,255,255,0.2) inset;
+}
+.btn-green:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 22px rgba(0,232,122,0.4); }
+.btn-green:disabled { background: rgba(0,232,122,0.15); color: rgba(0,232,122,0.4); cursor: not-allowed; box-shadow: none; transform: none; }
+.btn-glass { background: var(--glass); color: var(--text-secondary); border: 1px solid var(--glass-border); }
+.btn-glass:hover { background: var(--glass-hover); color: var(--text); }
+.btn-red-glass { background: var(--glow-red-dim); color: var(--glow-red); border: 1px solid rgba(244,63,94,0.25); }
+.btn-red-glass:hover:not(:disabled) { background: rgba(244,63,94,0.22); }
+.btn-red-glass:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-blue-glass { background: var(--glow-blue-dim); color: #818cf8; border: 1px solid rgba(99,102,241,0.25); }
+.btn-blue-glass:hover { background: rgba(99,102,241,0.2); }
+.btn-sm { padding: 7px 14px; font-size: 12px; border-radius: 8px; }
+.btn-row { display: flex; gap: 10px; margin-bottom: 24px; flex-wrap: wrap; }
+
+.config-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 0; }
+.config-item { padding: 18px 20px; }
+.config-item label {
+  display: block; font-size: 10px; font-weight: 600;
+  color: var(--text-tertiary); letter-spacing: 1.2px;
+  text-transform: uppercase; margin-bottom: 10px;
+}
+.config-item input, .config-item select {
+  width: 100%; background: rgba(0,0,0,0.25); border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm); color: var(--text);
+  font-family: 'Outfit', sans-serif; font-size: 14px; font-weight: 500;
+  padding: 10px 12px; outline: none; transition: border-color 0.2s;
+  cursor: pointer; -webkit-appearance: none;
+}
+.config-item input:focus, .config-item select:focus { border-color: rgba(0,232,122,0.4); }
+.config-item select option { background: #1a1535; color: var(--text); }
+.config-hint { font-size: 11px; color: var(--text-tertiary); margin-top: 7px; }
+
+.stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 20px; }
+.stat-card { padding: 20px; position: relative; overflow: hidden; }
+.stat-card::after {
+  content: ''; position: absolute; top: 0; right: 0;
+  width: 60px; height: 60px; border-radius: 50%; opacity: 0.12; filter: blur(20px);
+}
+.stat-card.s-blue::after { background: var(--glow-blue); }
+.stat-card.s-green::after { background: var(--glow-green); }
+.stat-card.s-purple::after { background: var(--glow-salmon); }
+.stat-card.s-amber::after { background: var(--glow-amber); }
+.stat-label { font-size: 10px; font-weight: 600; color: var(--text-tertiary); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 10px; }
+.stat-val { font-family: 'JetBrains Mono', monospace; font-size: 30px; font-weight: 600; line-height: 1; }
+.stat-val.green { color: var(--glow-green); text-shadow: 0 0 20px rgba(0,232,122,0.4); }
+.stat-val.blue { color: #818cf8; text-shadow: 0 0 20px rgba(99,102,241,0.4); }
+.stat-val.white { color: var(--text); }
+.stat-sub { font-size: 11px; color: var(--text-tertiary); margin-top: 6px; }
+
+.log-wrap { margin-bottom: 28px; }
+.log-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 13px 18px; border-bottom: 1px solid var(--glass-border);
+}
+.log-head-left { display: flex; align-items: center; gap: 8px; }
+.log-title { font-size: 11px; font-weight: 600; color: var(--text-tertiary); letter-spacing: 1px; text-transform: uppercase; }
+.log-body {
+  padding: 14px 18px; font-family: 'JetBrains Mono', monospace;
+  font-size: 12px; color: var(--text-secondary);
+  max-height: 130px; overflow-y: auto; line-height: 1.9;
+}
+.log-line .ts { color: var(--text-tertiary); }
+.log-line .ok { color: var(--glow-green); }
+.log-line .warn { color: var(--glow-amber); }
+.log-line .err { color: var(--glow-red); }
+.log-body::-webkit-scrollbar { width: 3px; }
+.log-body::-webkit-scrollbar-track { background: transparent; }
+.log-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+
+.section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.section-title { font-size: 16px; font-weight: 700; letter-spacing: -0.3px; }
+.count-pill {
+  font-size: 12px; font-weight: 600;
+  background: var(--glow-green-dim); color: var(--glow-green);
+  padding: 4px 12px; border-radius: var(--radius-pill);
+  border: 1px solid rgba(0,232,122,0.2);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.opportunities { display: flex; flex-direction: column; gap: 12px; }
+
+.opp-card {
+  padding: 22px 24px; border-radius: var(--radius);
+  animation: fadeUp 0.4s ease both;
+  position: relative; overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+  border: 1px solid var(--glass-border);
+  background: var(--glass);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+}
+.opp-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+}
+.opp-card.strong { border-left: 2px solid var(--glow-green); box-shadow: -4px 0 20px rgba(0,232,122,0.1), 0 8px 32px rgba(0,0,0,0.3); }
+.opp-card.moderate { border-left: 2px solid var(--glow-amber); box-shadow: -4px 0 20px rgba(245,158,11,0.1), 0 8px 32px rgba(0,0,0,0.3); }
+.opp-card:hover { transform: translateY(-2px); box-shadow: 0 16px 48px rgba(0,0,0,0.4); }
+
+.opp-card .card-glow {
+  position: absolute; top: -30px; right: -30px;
+  width: 120px; height: 120px; border-radius: 50%;
+  filter: blur(40px); opacity: 0.12; pointer-events: none;
+}
+.opp-card.strong .card-glow { background: var(--glow-green); }
+.opp-card.moderate .card-glow { background: var(--glow-amber); }
+
+@keyframes fadeUp { from { opacity:0; transform:translateY(10px) } to { opacity:1; transform:translateY(0) } }
+
+.opp-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
+.opp-left { flex: 1; }
+.cat-pill {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase;
+  padding: 3px 10px; border-radius: var(--radius-pill); margin-bottom: 10px;
+}
+.cat-pill.economics { background: var(--glow-blue-dim); color: #818cf8; border: 1px solid rgba(99,102,241,0.2); }
+.cat-pill.politics   { background: var(--glow-salmon-dim); color: #c084fc; border: 1px solid rgba(250,128,114,0.2); }
+.cat-pill.crypto     { background: var(--glow-amber-dim); color: var(--glow-amber); border: 1px solid rgba(245,158,11,0.2); }
+
+.opp-title { font-size: 16px; font-weight: 700; line-height: 1.4; color: var(--text); }
+.opp-meta { font-size: 11px; color: var(--text-tertiary); margin-top: 5px; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.3px; }
+
+.opp-edge-box { text-align: right; flex-shrink: 0; }
+.edge-lbl { font-size: 10px; font-weight: 600; color: var(--text-tertiary); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px; }
+.edge-num { font-family: 'JetBrains Mono', monospace; font-size: 34px; font-weight: 600; line-height: 1; }
+.edge-num.strong-c { color: var(--glow-green); text-shadow: 0 0 24px rgba(0,232,122,0.5); }
+.edge-num.mod-c { color: var(--glow-amber); text-shadow: 0 0 24px rgba(245,158,11,0.4); }
+
+.opp-bars { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+@media(max-width:560px) { .opp-bars { grid-template-columns: 1fr; } }
+.bar-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.bar-name { font-size: 10px; font-weight: 600; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.8px; }
+.bar-val-label { font-family: 'JetBrains Mono', monospace; font-size: 16px; font-weight: 600; }
+.bar-val-label.market-c { color: #818cf8; }
+.bar-val-label.fair-c   { color: var(--glow-green); }
+.bar-track { height: 8px; border-radius: 6px; overflow: hidden; background: rgba(255,255,255,0.06); }
+.bar-fill { height: 100%; border-radius: 6px; transition: width 0.8s cubic-bezier(.4,0,.2,1); }
+.bar-fill.market-fill { background: linear-gradient(90deg, #6366f1, #818cf8); box-shadow: 0 0 8px rgba(99,102,241,0.4); }
+.bar-fill.fair-fill   { background: linear-gradient(90deg, #00b359, var(--glow-green)); box-shadow: 0 0 8px rgba(0,232,122,0.4); }
+.bar-sub { font-size: 11px; color: var(--text-tertiary); margin-top: 5px; }
+
+.opp-footer {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 12px; padding-top: 18px;
+  border-top: 1px solid rgba(255,255,255,0.07);
+}
+.kelly-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.action-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 13px; font-weight: 700; padding: 6px 14px; border-radius: var(--radius-pill);
+}
+.action-chip.yes { background: rgba(0,232,122,0.12); color: var(--glow-green); border: 1px solid rgba(0,232,122,0.25); }
+.action-chip.no  { background: var(--glow-red-dim); color: var(--glow-red); border: 1px solid rgba(244,63,94,0.25); }
+.kelly-txt { font-size: 13px; color: var(--text-secondary); }
+.kelly-txt strong { color: var(--text); font-weight: 600; }
+.opp-btns { display: flex; gap: 8px; }
+
+.empty-state { text-align: center; padding: 70px 20px; color: var(--text-tertiary); }
+.empty-icon { font-size: 38px; margin-bottom: 14px; opacity: 0.5; }
+.empty-state p { font-size: 14px; line-height: 1.7; }
+
+.disclaimer {
+  margin-top: 32px; padding: 14px 18px;
+  background: rgba(245,158,11,0.07); border: 1px solid rgba(245,158,11,0.18);
+  border-radius: var(--radius-sm);
+  font-size: 12px; color: rgba(245,158,11,0.7); line-height: 1.7;
+}
+
+#toast-container {
+  position: fixed; top: 20px; right: 20px; z-index: 9999;
+  display: flex; flex-direction: column; gap: 10px; pointer-events: none;
+}
+.toast {
+  display: flex; align-items: center; gap: 12px; padding: 13px 18px;
+  border-radius: 14px; background: rgba(20,18,40,0.92);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.45), 0 1px 0 rgba(255,255,255,0.08) inset;
+  font-size: 13px; font-weight: 500; color: var(--text);
+  min-width: 260px; max-width: 360px; pointer-events: all;
+  animation: toastIn 0.32s cubic-bezier(.34,1.56,.64,1) both;
+}
+.toast.hiding { animation: toastOut 0.28s ease forwards; }
+@keyframes toastIn  { from { opacity:0; transform: translateX(24px) scale(0.96) } to { opacity:1; transform: translateX(0) scale(1) } }
+@keyframes toastOut { from { opacity:1; transform: translateX(0) scale(1) }       to { opacity:0; transform: translateX(16px) scale(0.95) } }
+.toast-icon {
+  width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; font-size: 15px;
+}
+.toast.t-success .toast-icon { background: rgba(0,232,122,0.15); }
+.toast.t-info    .toast-icon { background: rgba(99,102,241,0.15); }
+.toast.t-warning .toast-icon { background: rgba(245,158,11,0.15); }
+.toast.t-edge    .toast-icon { background: rgba(0,232,122,0.2); box-shadow: 0 0 10px rgba(0,232,122,0.2); }
+.toast-body { flex: 1; line-height: 1.4; }
+.toast-title { font-weight: 700; font-size: 13px; margin-bottom: 1px; }
+.toast-title.green { color: var(--glow-green); }
+.toast-title.blue  { color: #818cf8; }
+.toast-title.amber { color: var(--glow-amber); }
+.toast-msg { font-size: 12px; color: var(--text-secondary); }
+.toast-close {
+  background: none; border: none; color: var(--text-tertiary);
+  font-size: 16px; cursor: pointer; padding: 0 2px; line-height: 1; flex-shrink: 0;
+}
+.toast-close:hover { color: var(--text); }
+.toast-progress {
+  position: absolute; bottom: 0; left: 0; height: 2px;
+  border-radius: 0 0 14px 14px; animation: progress linear forwards;
+}
+.toast.t-success .toast-progress, .toast.t-edge .toast-progress { background: var(--glow-green); }
+.toast.t-info    .toast-progress { background: #818cf8; }
+.toast.t-warning .toast-progress { background: var(--glow-amber); }
+@keyframes progress { from { width:100% } to { width:0% } }
+
+.acct-hero {
+  padding: 22px 24px;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 16px; flex-wrap: wrap;
+}
+.acct-hero-inner { display: flex; align-items: center; gap: 16px; }
+.acct-avatar {
+  width: 48px; height: 48px; border-radius: 14px; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--glow-blue), var(--glow-salmon));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; font-weight: 700; color: #fff;
+  box-shadow: 0 0 20px rgba(99,102,241,0.3);
+}
+.acct-name { font-size: 17px; font-weight: 700; margin-bottom: 3px; }
+.acct-sub  { font-size: 13px; color: var(--text-secondary); }
+
+.pos-card {
+  padding: 18px 22px; border-radius: var(--radius);
+  border: 1px solid var(--glass-border); background: var(--glass);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  animation: fadeUp 0.35s ease both; position: relative; overflow: hidden;
+}
+.pos-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
+}
+.pos-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.pos-title { font-size: 15px; font-weight: 700; line-height: 1.4; }
+.pos-meta  { font-size: 11px; color: var(--text-tertiary); margin-top: 4px; font-family: 'JetBrains Mono', monospace; }
+.pos-right { text-align: right; flex-shrink: 0; }
+.pos-pnl { font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 700; }
+.pos-pnl.gain { color: var(--glow-green); text-shadow: 0 0 16px rgba(0,232,122,0.4); }
+.pos-pnl.loss { color: var(--glow-red); text-shadow: 0 0 16px rgba(244,63,94,0.35); }
+.pos-pnl.flat { color: var(--text-secondary); }
+.pos-pnl-label { font-size: 10px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.8px; margin-top: 2px; }
+.pos-footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+.pos-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.pos-chip {
+  font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: var(--radius-pill);
+  background: var(--glass); border: 1px solid var(--glass-border); color: var(--text-secondary);
+}
+.pos-chip.yes-chip { background: rgba(0,232,122,0.1); color: var(--glow-green); border-color: rgba(0,232,122,0.2); }
+.pos-chip.no-chip  { background: var(--glow-red-dim); color: var(--glow-red); border-color: rgba(244,63,94,0.2); }
+
+.trades-table-wrap { overflow-x: auto; }
+.trades-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.trades-table thead tr { border-bottom: 1px solid var(--glass-border); }
+.trades-table th {
+  padding: 12px 16px; font-size: 10px; font-weight: 600; color: var(--text-tertiary);
+  text-transform: uppercase; letter-spacing: 0.9px; text-align: left; white-space: nowrap;
+}
+.trades-table td {
+  padding: 13px 16px; border-bottom: 1px solid rgba(255,255,255,0.04);
+  color: var(--text-secondary); vertical-align: middle;
+}
+.trades-table tbody tr:last-child td { border-bottom: none; }
+.trades-table tbody tr:hover td { background: rgba(255,255,255,0.03); }
+.trades-empty { text-align: center; padding: 40px 16px !important; color: var(--text-tertiary); font-size: 13px; }
+.trade-market { color: var(--text); font-weight: 600; max-width: 220px; }
+.trade-side-yes { color: var(--glow-green); font-weight: 700; }
+.trade-side-no  { color: var(--glow-red); font-weight: 700; }
+.trade-pnl-gain { color: var(--glow-green); font-weight: 600; font-family: 'JetBrains Mono', monospace; }
+.trade-pnl-loss { color: var(--glow-red); font-weight: 600; font-family: 'JetBrains Mono', monospace; }
+.trade-pnl-open { color: var(--text-tertiary); font-family: 'JetBrains Mono', monospace; }
+.trade-mono { font-family: 'JetBrains Mono', monospace; }
+
+.api-badge.live { background: var(--glow-green-dim); color: var(--glow-green); border-color: rgba(0,232,122,0.3); }
+
+.explainer {
+  background: rgba(99,102,241,0.07); border: 1px solid rgba(99,102,241,0.2);
+  border-radius: var(--radius); padding: 24px; margin-bottom: 24px;
+}
+.explainer h2 { font-size: 17px; font-weight: 700; margin-bottom: 10px; color: #818cf8; }
+.explainer p { font-size: 14px; color: var(--text-secondary); line-height: 1.78; }
+.explainer strong { color: var(--text); }
+
+.step-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 32px; }
+.step {
+  padding: 20px 22px; display: flex; gap: 18px; align-items: flex-start;
+  transition: transform 0.2s;
+}
+.step:hover { transform: translateX(4px); }
+.step-num {
+  width: 34px; height: 34px; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--glow-green), #00b359);
+  color: #000; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 14px;
+  box-shadow: 0 0 14px rgba(0,232,122,0.3);
+}
+.step-content h3 { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+.step-content p { font-size: 13px; color: var(--text-secondary); line-height: 1.72; }
+.step-code {
+  display: inline-block; margin-top: 8px;
+  background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border);
+  padding: 5px 12px; border-radius: 7px;
+  font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #818cf8;
+}
+
+.filter-bar {
+  display: flex; align-items: center; gap: 14px;
+  padding: 12px 16px; margin-bottom: 14px; flex-wrap: wrap;
+}
+.filter-label {
+  font-size: 10px; font-weight: 700; color: var(--text-tertiary);
+  text-transform: uppercase; letter-spacing: 1.1px; white-space: nowrap; flex-shrink: 0;
+}
+.filter-pills { display: flex; gap: 8px; flex-wrap: wrap; }
+.filter-pill {
+  padding: 6px 14px; border-radius: var(--radius-pill);
+  border: 1px solid var(--glass-border); background: transparent;
+  color: var(--text-secondary); font-family: 'Outfit', sans-serif;
+  font-size: 12px; font-weight: 600; cursor: pointer;
+  transition: all 0.18s; white-space: nowrap;
+}
+.filter-pill:hover { background: var(--glass-hover); color: var(--text); }
+.filter-pill.active { background: rgba(0,232,122,0.12); color: var(--glow-green); border-color: rgba(0,232,122,0.3); }
+
+.expiry-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 11px; font-weight: 600; padding: 2px 9px; border-radius: var(--radius-pill);
+  font-family: 'JetBrains Mono', monospace; letter-spacing: 0.2px;
+}
+.expiry-badge.exp-urgent { background: rgba(244,63,94,0.12); color: var(--glow-red); border: 1px solid rgba(244,63,94,0.22); }
+.expiry-badge.exp-soon   { background: rgba(245,158,11,0.12); color: var(--glow-amber); border: 1px solid rgba(245,158,11,0.22); }
+.expiry-badge.exp-normal { background: rgba(255,255,255,0.06); color: var(--text-tertiary); border: 1px solid var(--glass-border); }
+
+/* ── Light mode overrides ── */
+html.light .log-body { color: var(--text-secondary); }
+html.light .log-line .ts  { color: var(--text-tertiary); }
+html.light .log-line .ok  { color: var(--glow-green); }
+html.light .log-line .warn{ color: var(--glow-amber); }
+html.light .log-line .err { color: var(--glow-red); }
+html.light .config-item input, html.light .config-item select, html.light .api-row input, html.light #api-private-key {
+  background: rgba(255,255,255,1.0); border-color: rgba(0,0,0,0.12); color: #0f0f0f;
+}
+html.light .opp-card { background: #ffffff; border-color: rgba(0,0,0,0.08); box-shadow: 0 4px 24px rgba(180,80,60,0.07); }
+html.light .opp-card.strong { border-left-color: var(--glow-green); box-shadow: -4px 0 20px rgba(0,168,84,0.12), 0 4px 20px rgba(180,80,60,0.06); }
+html.light .opp-card.moderate { border-left-color: var(--glow-amber); box-shadow: -4px 0 20px rgba(192,120,0,0.12), 0 4px 20px rgba(180,80,60,0.06); }
+html.light .trades-table td { color: var(--text-secondary); border-bottom-color: rgba(180,100,80,0.1); }
+html.light .trades-table tbody tr:hover td { background: rgba(250,128,114,0.04); }
+html.light .toast { background: rgba(255,255,255,0.98); color: var(--text); border-color: rgba(200,150,130,0.3); box-shadow: 0 8px 32px rgba(180,80,60,0.15); }
+html.light body::after { opacity: 0; }
+html.light .brand-name span { color: var(--glow-green); }
+html.light .tab.active { background: rgba(0,0,0,0.07); color: #0f0f0f; box-shadow: none; }
+html.light .tab:hover:not(.active) { background: rgba(0,0,0,0.04); color: #0f0f0f; }
+html.light .filter-pill.active { background: rgba(0,168,84,0.1); color: var(--glow-green); border-color: rgba(0,168,84,0.25); }
+html.light .filter-pill { border-color: rgba(0,0,0,0.1); color: rgba(0,0,0,0.5); }
+html.light .filter-pill:hover { background: rgba(0,0,0,0.04); color: #0f0f0f; }
+html.light .stat-card { background: #ffffff; border-color: rgba(0,0,0,0.08); }
+html.light .log-body { background: rgba(0,0,0,0.02); }
+html.light .bar-track { background: rgba(0,0,0,0.07); }
+html.light .opp-footer { border-top-color: rgba(0,0,0,0.07); }
+html.light .count-pill { background: rgba(0,168,84,0.1); border-color: rgba(0,168,84,0.2); }
+html.light .action-chip.yes { background: rgba(0,168,84,0.1); border-color: rgba(0,168,84,0.2); }
+html.light .action-chip.no  { background: rgba(212,46,74,0.08); border-color: rgba(212,46,74,0.15); }
+html.light .btn-glass { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.1); color: rgba(0,0,0,0.6); }
+html.light .btn-glass:hover { background: rgba(0,0,0,0.09); color: #0f0f0f; }
+html.light .disclaimer { background: rgba(245,158,11,0.06); border-color: rgba(245,158,11,0.2); }
+html.light .pos-card { background: #ffffff; border-color: rgba(0,0,0,0.08); }
+html.light .pos-chip { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.08); color: rgba(0,0,0,0.5); }
+html.light .expiry-badge.exp-normal { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.1); color: rgba(0,0,0,0.4); }
+html.light #live-timer { color: var(--glow-green); }
+html.light .stat-val.green { text-shadow: none; }
+html.light .stat-val.blue  { text-shadow: none; }
+html.light .edge-num.strong-c { text-shadow: none; }
+html.light .edge-num.mod-c    { text-shadow: none; }
+html.light .bar-fill.market-fill { box-shadow: none; }
+html.light .bar-fill.fair-fill   { box-shadow: none; }
+</style>
+</head>
+<body>
+<div id="toast-container"></div>
+<div class="page">
+
+  <div class="header">
+    <div class="brand">
+      <div class="brand-icon">⚡</div>
+      <div class="brand-name">Kalshi <span>Edge</span></div>
+    </div>
+    <div class="glass live-pill" style="gap:14px;">
+      <button id="theme-toggle" onclick="toggleTheme()" style="background:none;border:none;cursor:pointer;font-size:17px;line-height:1;padding:0;color:var(--text-secondary);transition:color 0.2s;" title="Toggle light/dark mode">🌙</button>
+      <div style="width:1px;height:14px;background:var(--glass-border);"></div>
+      <div class="live-dot" id="live-dot"></div>
+      <span id="live-label">Idle</span>
+      &nbsp;·&nbsp;
+      <span id="live-timer">—</span>
+    </div>
+  </div>
+
+  <div class="glass tabs">
+    <button class="tab active" onclick="showTab('scanner')">Scanner</button>
+    <button class="tab" onclick="showTab('account')">My Account</button>
+    <button class="tab" onclick="showTab('instructions')">How It Works</button>
+  </div>
+
+  <div class="tab-content active" id="tab-scanner">
+    <div class="glass api-card">
+      <div class="api-top">
+        <h3>Kalshi API Credentials</h3>
+        <span class="api-badge" id="api-badge">Optional</span>
+      </div>
+      <p>Kalshi uses RSA key-pair auth. Go to <strong>kalshi.com → Settings → API Keys → Create</strong>. You'll get a <strong>Key ID</strong> and a <strong>Private Key</strong> file (.key). Paste both below. Without them, the scanner runs on simulated data.</p>
+      <div class="api-row" style="margin-bottom:10px;">
+        <input type="text" id="api-key-id" placeholder="Key ID (e.g. a952bcbe-ec3b-4b5b-…)" style="flex:1;min-width:200px;">
+      </div>
+      <div style="margin-bottom:12px;">
+        <textarea id="api-private-key" placeholder="Paste your RSA private key here (starts with -----BEGIN RSA PRIVATE KEY-----)" style="width:100%;min-height:90px;background:rgba(0,0,0,0.25);border:1px solid var(--glass-border);border-radius:var(--radius-sm);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;padding:11px 14px;outline:none;resize:vertical;transition:border-color 0.2s;line-height:1.5;"></textarea>
+      </div>
+      <div class="api-row">
+        <button class="btn btn-glass" onclick="saveKey()">Save & Connect</button>
+        <button class="btn btn-blue-glass" onclick="runDemo()">▶ Run Demo</button>
+      </div>
+    </div>
+
+    <div class="glass" style="margin-top:16px; padding: 22px 24px;">
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom:20px;">
+        <span style="font-size:16px;">⚙️</span>
+        <span style="font-size:15px; font-weight:700; letter-spacing:-0.2px;">Scanner Configuration</span>
+      </div>
+      <div class="config-grid" style="margin-bottom:0;">
+        <div class="config-item" style="padding:0 0 0 0;">
+          <label>Edge Threshold (%)</label>
+          <input type="number" id="threshold" value="8" min="1" max="50">
+          <div class="config-hint">Min % gap to flag an opportunity</div>
+        </div>
+        <div class="config-item" style="padding:0;">
+          <label>Scan Interval</label>
+          <select id="interval">
+            <option value="5">Every 5 seconds</option>
+            <option value="10" selected>Every 10 seconds</option>
+            <option value="30">Every 30 seconds</option>
+            <option value="60">Every 60 seconds</option>
+          </select>
+        </div>
+        <div class="config-item" style="padding:0;">
+          <label>Market Category</label>
+          <select id="category">
+            <option value="all">All (Econ + Politics + Crypto)</option>
+            <option value="economics">Economics / Fed</option>
+            <option value="politics">Politics</option>
+            <option value="crypto">Crypto</option>
+          </select>
+        </div>
+        <div class="config-item" style="padding:0;">
+          <label style="display:flex;align-items:center;justify-content:space-between;">
+            <span>Bankroll ($)</span>
+            <span id="bankroll-live-badge" style="display:none;font-size:10px;font-weight:600;color:var(--glow-green);background:var(--glow-green-dim);border:1px solid rgba(0,232,122,0.25);padding:1px 7px;border-radius:100px;letter-spacing:0.3px;">● LIVE</span>
+          </label>
+          <input type="number" id="bankroll" value="1000" min="10">
+          <div class="config-hint" style="line-height:1.55;">Auto-synced to your Kalshi balance. <span style="color:var(--text-secondary);">Adjust lower if not risking your full balance.</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="btn-row" style="margin-top:16px">
+      <button class="btn btn-green" id="start-btn" onclick="startScanner()">▶ Start Scanner</button>
+      <button class="btn btn-red-glass" id="stop-btn" onclick="stopScanner()" disabled>■ Stop</button>
+      <button class="btn btn-glass" onclick="clearOpps()">Clear Results</button>
+    </div>
+
+    <div class="stats-row">
+      <div class="glass stat-card s-blue"><div class="stat-label">Markets Scanned</div><div class="stat-val blue" id="stat-scanned">0</div><div class="stat-sub">contracts checked</div></div>
+      <div class="glass stat-card s-green"><div class="stat-label">Edges Found</div><div class="stat-val green" id="stat-edges">0</div><div class="stat-sub">above threshold</div></div>
+      <div class="glass stat-card s-purple"><div class="stat-label">Scans Run</div><div class="stat-val white" id="stat-scans">0</div><div class="stat-sub">total cycles</div></div>
+      <div class="glass stat-card s-amber"><div class="stat-label">Avg Edge Size</div><div class="stat-val green" id="stat-avg">—</div><div class="stat-sub">active opportunities</div></div>
+    </div>
+
+    <div class="glass log-wrap">
+      <div class="log-head">
+        <div class="log-head-left"><span class="log-title">Activity Log</span></div>
+        <button class="btn btn-glass btn-sm" onclick="document.getElementById('log').innerHTML=''">Clear</button>
+      </div>
+      <div class="log-body" id="log">
+        <div class="log-line"><span class="ts">[--:--:--]</span> Scanner ready. Press Start or Run Demo.</div>
+      </div>
+    </div>
+
+    <div class="section-header">
+      <div class="section-title">Flagged Opportunities</div>
+      <div class="count-pill" id="opp-count">0 found</div>
+    </div>
+
+    <div class="glass filter-bar">
+      <span class="filter-label">Sort by</span>
+      <div class="filter-pills">
+        <button class="filter-pill active" onclick="setSort('edge-high')" id="sort-edge-high">↓ Edge High→Low</button>
+        <button class="filter-pill" onclick="setSort('edge-low')" id="sort-edge-low">↑ Edge Low→High</button>
+        <button class="filter-pill" onclick="setSort('expiry')" id="sort-expiry">⏱ Expiry Soonest</button>
+        <button class="filter-pill" onclick="setSort('popular')" id="sort-popular">🔥 Most Popular</button>
+      </div>
+    </div>
+
+    <div class="opportunities" id="opportunities">
+      <div class="empty-state"><div class="empty-icon">🔍</div><p>No opportunities yet.<br>Start the scanner to surface mispricings.</p></div>
+    </div>
+
+    <div class="disclaimer"><strong>Risk notice:</strong> For research and education only. Prediction market trading involves real financial risk. Your probability estimates can be wrong. Never risk money you can't afford to lose. Not financial advice.</div>
+  </div>
+
+  <div class="tab-content" id="tab-account">
+    <div class="acct-hero glass" id="acct-hero">
+      <div class="acct-hero-inner">
+        <div class="acct-avatar" id="acct-avatar">?</div>
+        <div>
+          <div class="acct-name" id="acct-name">Connect API Key</div>
+          <div class="acct-sub" id="acct-sub">Save your Kalshi API key on the Scanner tab to load your account</div>
+        </div>
+      </div>
+      <button class="btn btn-glass btn-sm" onclick="refreshAccount()" id="acct-refresh-btn">↻ Refresh</button>
+    </div>
+
+    <div class="stats-row" style="margin-top:16px;">
+      <div class="glass stat-card s-green"><div class="stat-label">Available Balance</div><div class="stat-val green" id="acct-balance">—</div><div class="stat-sub" id="acct-balance-sub">from Kalshi account</div></div>
+      <div class="glass stat-card s-blue"><div class="stat-label">Portfolio Value</div><div class="stat-val blue" id="acct-portfolio">—</div><div class="stat-sub">open positions</div></div>
+      <div class="glass stat-card s-purple"><div class="stat-label">Total P&amp;L</div><div class="stat-val white" id="acct-pnl">—</div><div class="stat-sub" id="acct-pnl-sub">realized + unrealized</div></div>
+      <div class="glass stat-card s-amber"><div class="stat-label">Win Rate</div><div class="stat-val green" id="acct-winrate">—</div><div class="stat-sub" id="acct-winrate-sub">resolved trades</div></div>
+    </div>
+
+    <div class="section-header" style="margin-top:28px;"><div class="section-title">Open Positions</div><div class="count-pill" id="pos-count">0 positions</div></div>
+    <div id="positions-container" class="opportunities">
+      <div class="empty-state"><div class="empty-icon">📂</div><p>No open positions loaded.<br>Connect your API key to see live holdings.</p></div>
+    </div>
+
+    <div class="section-header" style="margin-top:28px;"><div class="section-title">Trade History</div><div class="count-pill" id="trades-count">0 trades</div></div>
+    <div class="glass" style="overflow:hidden; margin-bottom:32px;">
+      <div class="trades-table-wrap">
+        <table class="trades-table" id="trades-table">
+          <thead><tr><th>Market</th><th>Side</th><th>Contracts</th><th>Price</th><th>Total</th><th>Date</th><th>P&amp;L</th></tr></thead>
+          <tbody id="trades-body"><tr><td colspan="7" class="trades-empty">Connect your API key to load trade history</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-content" id="tab-instructions">
+    <div class="explainer">
+      <h2>🧠 What Is This Strategy, In Plain English?</h2>
+      <p>Imagine a market says there's a <strong>30% chance</strong> of an event — but your data says <strong>55%</strong>. The crowd is wrong. You buy the contract cheap, and when the market corrects itself, your position is worth more. This scanner finds those gaps automatically across economics, politics, and crypto markets — where mispricings happen most.</p>
+    </div>
+
+    <div class="step-list">
+      <div class="glass step"><div class="step-num">1</div><div class="step-content"><h3>Get a Kalshi Account</h3><p>Go to <strong>kalshi.com</strong> and sign up free. It's the regulated US exchange powering Robinhood's event contracts. Start with as little as $50.</p></div></div>
+      <div class="glass step"><div class="step-num">2</div><div class="step-content"><h3>Get Your API Key</h3><p>In Kalshi, go to Settings → API Keys and create a key. Paste it into the Scanner tab to enable live market data.</p><span class="step-code">kalshi.com → Account → Settings → API Keys → Create</span></div></div>
+      <div class="glass step"><div class="step-num">3</div><div class="step-content"><h3>Set Your Threshold</h3><p>Default is 8% — the minimum gap needed to flag a trade. Too low = noise. Too high = missed opportunities. Start between 8–12%.</p></div></div>
+      <div class="glass step"><div class="step-num">4</div><div class="step-content"><h3>Scanner Flags It — You Decide</h3><p>Each card shows market price vs fair value, your edge %, and a Kelly Criterion bet size. You place the trade on Kalshi manually.</p></div></div>
+      <div class="glass step"><div class="step-num">5</div><div class="step-content"><h3>Wait, Then Exit</h3><p>Markets drift toward true probability over time. Sell early or hold to resolution. Buy at 30¢, resolve YES = 70¢ profit per contract.</p></div></div>
+      <div class="glass step"><div class="step-num">6</div><div class="step-content"><h3>Track &amp; Calibrate</h3><p>After 20–30 trades, check if your underpriced calls resolved YES more often. If yes, your model works. If not, refine your fair value estimates.</p></div></div>
+    </div>
+
+    <div class="glossary-title">Key Terms, Simply Explained</div>
+    <dl class="glossary">
+      <div class="glass glossary-item"><dt>Market Price (¢)</dt><dd>What the crowd pays. 30¢ means they think there's a 30% chance of YES.</dd></div>
+      <div class="glass glossary-item"><dt>Fair Value (¢)</dt><dd>What your data suggests the real probability is. 55¢ = 55% chance.</dd></div>
+      <div class="glass glossary-item"><dt>Edge %</dt><dd>The gap between the two. 30¢ vs 55¢ = 25% edge. Bigger is better.</dd></div>
+      <div class="glass glossary-item"><dt>Kelly Criterion</dt><dd>Math formula for the ideal bet size. Prevents overbetting even on strong edges.</dd></div>
+      <div class="glass glossary-item"><dt>Contracts</dt><dd>What you buy on Kalshi. Each YES pays $1 if the event happens, $0 if not.</dd></div>
+      <div class="glass glossary-item"><dt>Resolution</dt><dd>When the market closes and Kalshi settles all contracts automatically.</dd></div>
+      <div class="glass glossary-item"><dt>Liquidity</dt><dd>How easy to enter/exit. Stick to markets with $10k+ volume.</dd></div>
+      <div class="glass glossary-item"><dt>Mispricing</dt><dd>When the crowd gets probabilities wrong. Happens most in low-attention markets.</dd></div>
+    </dl>
+  </div>
+</div>
+
+<script>
+let scanInterval = null, scanCount = 0, totalEdges = 0, allEdges = [];
+let totalScanned = 0, countdown = 0, countdownTimer = null, apiKey = '';
+let apiKeyId = '', apiPrivateKey = '';
+let oppStore = [], sortMode = 'edge-high';
+
+// ═══════════════════════════════════════════════════════════════
+// PROXY: All Kalshi API calls route through a Netlify Function
+// at /.netlify/functions/proxy — this runs server-side so
+// there are zero CORS issues.
+// ═══════════════════════════════════════════════════════════════
+const KALSHI_PROXY = '/.netlify/functions/proxy';
+
+function toast(type, title, msg, duration = 4000) {
+  const icons = { success: '✓', info: 'ℹ', warning: '⚠', edge: '⚡', error: '✕' };
+  const titleColors = { success: 'green', info: 'blue', warning: 'amber', edge: 'green', error: 'red' };
+  const container = document.getElementById('toast-container');
+  const t = document.createElement('div');
+  t.className = `toast t-${type}`;
+  t.style.position = 'relative';
+  t.innerHTML = `
+    <div class="toast-icon">${icons[type] || '•'}</div>
+    <div class="toast-body">
+      <div class="toast-title ${titleColors[type] || ''}">${title}</div>
+      ${msg ? `<div class="toast-msg">${msg}</div>` : ''}
+    </div>
+    <button class="toast-close" onclick="dismissToast(this.parentElement)">×</button>
+    <div class="toast-progress" style="animation-duration:${duration}ms"></div>
+  `;
+  container.appendChild(t);
+  setTimeout(() => dismissToast(t), duration);
+}
+function dismissToast(el) {
+  if (!el || el.classList.contains('hiding')) return;
+  el.classList.add('hiding');
+  setTimeout(() => el.remove(), 300);
+}
+
+function toggleTheme() {
+  const isLight = document.documentElement.classList.toggle('light');
+  document.getElementById('theme-toggle').textContent = isLight ? '☀️' : '🌙';
+  localStorage.setItem('kalshi-theme', isLight ? 'light' : 'dark');
+  toast('info', isLight ? 'Light Mode' : 'Dark Mode', isLight ? 'Switched to light theme.' : 'Switched to dark theme.', 2000);
+}
+(function() {
+  if (localStorage.getItem('kalshi-theme') === 'light') {
+    document.documentElement.classList.add('light');
+    document.addEventListener('DOMContentLoaded', () => {
+      const btn = document.getElementById('theme-toggle');
+      if (btn) btn.textContent = '☀️';
+    });
+  }
+})();
+
+function showTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  const tabMap = { scanner: 0, account: 1, instructions: 2 };
+  document.querySelectorAll('.tab')[tabMap[tab]].classList.add('active');
+  if (tab === 'account' && apiKey) refreshAccount();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Kalshi API helper — routes through Netlify Function proxy
+// ═══════════════════════════════════════════════════════════════
+async function kalshiFetch(path) {
+  const url = KALSHI_PROXY + '?path=' + encodeURIComponent(path);
+  const res = await fetch(url, {
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Kalshi-Key-Id': apiKeyId,
+      'X-Kalshi-Private-Key': encodeURIComponent(apiPrivateKey)
+    }
+  });
+  if (!res.ok) {
+    let errMsg = 'API ' + res.status;
+    try { const j = await res.json(); errMsg = j.error || errMsg; } catch {}
+    throw new Error(errMsg);
+  }
+  return res.json();
+}
+
+async function saveKey() {
+  const keyId = document.getElementById('api-key-id').value.trim();
+  const privKey = document.getElementById('api-private-key').value.trim();
+  if (!keyId || !privKey) {
+    toast('warning', 'Missing Credentials', 'Enter both your Key ID and RSA Private Key.');
+    return;
+  }
+  if (!privKey.includes('PRIVATE KEY')) {
+    toast('warning', 'Invalid Key Format', 'Private key should start with -----BEGIN RSA PRIVATE KEY----- or -----BEGIN PRIVATE KEY-----');
+    return;
+  }
+  apiKeyId = keyId;
+  apiPrivateKey = privKey;
+  apiKey = keyId; // keep for mode detection (truthy = live)
+  addLog('Credentials saved. <span class="ok">Connecting to Kalshi…</span>');
+  const badge = document.getElementById('api-badge');
+  badge.textContent = 'Connecting…';
+  badge.className = 'api-badge';
+  try {
+    await loadAccountData();
+    badge.textContent = 'Live ✓';
+    badge.className = 'api-badge live';
+    toast('success', 'Connected to Kalshi', 'RSA auth successful. Account data loaded.');
+    addLog('<span class="ok">Connected to Kalshi.</span> RSA auth successful. Account data loaded.');
+  } catch (e) {
+    badge.textContent = 'Error';
+    badge.className = 'api-badge';
+    let msg = e.message;
+    if (msg.includes('401')) msg = 'Auth failed — check your Key ID and private key.';
+    else if (msg.includes('sign')) msg = 'RSA signing failed — make sure you pasted the full private key.';
+    toast('error', 'Connection Failed', msg);
+    addLog('<span class="err">API error: ' + e.message + '</span>');
+    apiKey = ''; apiKeyId = ''; apiPrivateKey = '';
+  }
+}
+
+async function refreshAccount() {
+  if (!apiKey) { toast('warning', 'No API Key', 'Save your API key on the Scanner tab first.'); return; }
+  const btn = document.getElementById('acct-refresh-btn');
+  btn.textContent = '↻ Loading…';
+  btn.disabled = true;
+  try {
+    await loadAccountData();
+    toast('success', 'Account Refreshed', 'Balance, positions and trades updated.');
+  } catch(e) {
+    toast('error', 'Refresh Failed', e.message);
+  } finally {
+    btn.textContent = '↻ Refresh';
+    btn.disabled = false;
+  }
+}
+
+async function loadAccountData() {
+  const [balanceData, positionsData, fillsData] = await Promise.all([
+    kalshiFetch('/portfolio/balance'),
+    kalshiFetch('/portfolio/positions?limit=50'),
+    kalshiFetch('/portfolio/fills?limit=100'),
+  ]);
+  renderAccountHero(balanceData);
+  renderPositions(positionsData.market_positions || []);
+  renderTrades(fillsData.fills || []);
+  computeAndRenderPnL(positionsData.market_positions || [], fillsData.fills || []);
+  const balance = (balanceData.balance || 0) / 100;
+  if (balance > 0) {
+    document.getElementById('bankroll').value = Math.floor(balance);
+    const liveBadge = document.getElementById('bankroll-live-badge');
+    if (liveBadge) liveBadge.style.display = 'inline-flex';
+    addLog('<span class="ok">Bankroll auto-set</span> to $' + Math.floor(balance).toLocaleString() + ' from your Kalshi balance.');
+  }
+}
+
+function renderAccountHero(data) {
+  const balance = ((data.balance || 0) / 100).toFixed(2);
+  document.getElementById('acct-avatar').textContent = '₭';
+  document.getElementById('acct-name').textContent = 'Kalshi Account';
+  document.getElementById('acct-sub').textContent = 'Connected · Available balance: $' + parseFloat(balance).toLocaleString('en-US', {minimumFractionDigits:2});
+  document.getElementById('acct-balance').textContent = '$' + parseFloat(balance).toLocaleString('en-US', {minimumFractionDigits:2});
+}
+
+function renderPositions(positions) {
+  const container = document.getElementById('positions-container');
+  const active = positions.filter(p => (p.position || 0) !== 0);
+  document.getElementById('pos-count').textContent = active.length + ' position' + (active.length !== 1 ? 's' : '');
+  if (!active.length) {
+    container.innerHTML = '<div class="empty-state"><div class="empty-icon">📂</div><p>No open positions found.<br>Your active contracts will appear here.</p></div>';
+    document.getElementById('acct-portfolio').textContent = '$0.00';
+    return;
+  }
+  let portfolioValue = 0;
+  container.innerHTML = '';
+  active.forEach((p, i) => {
+    const qty = p.position || 0, isBuy = qty > 0, absQty = Math.abs(qty);
+    const currentVal = (p.market_exposure || 0) / 100;
+    const costBasis = (p.total_cost || 0) / 100;
+    const unrealized = currentVal - costBasis;
+    const avgPrice = absQty > 0 ? (costBasis / absQty * 100).toFixed(0) : '—';
+    portfolioValue += currentVal;
+    const pnlClass = unrealized > 0.005 ? 'gain' : unrealized < -0.005 ? 'loss' : 'flat';
+    const pnlSign = unrealized > 0 ? '+' : '';
+    const card = document.createElement('div');
+    card.className = 'pos-card';
+    card.style.animationDelay = (i * 0.05) + 's';
+    const marketSlug = (p.market_id || '').toLowerCase().split('-')[0];
+    card.innerHTML = '<div class="pos-top"><div><div class="pos-title">' + (p.market_id || 'Unknown Market') + '</div><div class="pos-meta">' + absQty + ' contracts · Avg ' + avgPrice + '¢ · Cost $' + costBasis.toFixed(2) + '</div></div><div class="pos-right"><div class="pos-pnl ' + pnlClass + '">' + pnlSign + '$' + Math.abs(unrealized).toFixed(2) + '</div><div class="pos-pnl-label">unrealized P&L</div></div></div><div class="pos-footer"><div class="pos-chips"><span class="pos-chip ' + (isBuy ? 'yes-chip' : 'no-chip') + '">' + (isBuy ? '↑ YES' : '↓ NO') + '</span><span class="pos-chip">Value: $' + currentVal.toFixed(2) + '</span></div><button class="btn btn-glass btn-sm" onclick="window.open(\'https://kalshi.com/markets/' + marketSlug + '\',\'_blank\')">View ↗</button></div>';
+    container.appendChild(card);
+  });
+  document.getElementById('acct-portfolio').textContent = '$' + portfolioValue.toFixed(2);
+}
+
+function renderTrades(fills) {
+  const tbody = document.getElementById('trades-body');
+  document.getElementById('trades-count').textContent = fills.length + ' trade' + (fills.length !== 1 ? 's' : '');
+  if (!fills.length) {
+    tbody.innerHTML = '<tr><td colspan="7" class="trades-empty">No trade history found.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = '';
+  fills.slice(0, 50).forEach(f => {
+    const side = f.side === 'yes' ? 'YES' : 'NO';
+    const sideClass = f.side === 'yes' ? 'trade-side-yes' : 'trade-side-no';
+    const rawPrice = f.yes_price || f.no_price || 0;
+    const qty = f.count || 0;
+    const total = (rawPrice * qty / 100).toFixed(2);
+    const date = f.created_time ? new Date(f.created_time).toLocaleDateString('en-US', {month:'short', day:'numeric'}) : '—';
+    const pnl = f.profit !== undefined ? (f.profit / 100) : null;
+    let pnlHtml;
+    if (pnl === null) pnlHtml = '<span class="trade-pnl-open">Open</span>';
+    else if (pnl > 0.005) pnlHtml = '<span class="trade-pnl-gain">+$' + pnl.toFixed(2) + '</span>';
+    else if (pnl < -0.005) pnlHtml = '<span class="trade-pnl-loss">-$' + Math.abs(pnl).toFixed(2) + '</span>';
+    else pnlHtml = '<span class="trade-pnl-open">$0.00</span>';
+    const tr = document.createElement('tr');
+    tr.innerHTML = '<td class="trade-market">' + (f.market_id || 'Unknown').replace(/-/g,' ') + '</td><td class="' + sideClass + '">' + side + '</td><td class="trade-mono">' + qty + '</td><td class="trade-mono">' + rawPrice + '¢</td><td class="trade-mono">$' + total + '</td><td style="color:var(--text-tertiary);white-space:nowrap">' + date + '</td><td>' + pnlHtml + '</td>';
+    tbody.appendChild(tr);
+  });
+}
+
+function computeAndRenderPnL(positions, fills) {
+  const resolvedFills = fills.filter(f => f.profit !== undefined);
+  const realizedPnL = resolvedFills.reduce((s, f) => s + (f.profit || 0) / 100, 0);
+  const unrealizedPnL = positions.reduce((s, p) => s + ((p.market_exposure || 0) - (p.total_cost || 0)) / 100, 0);
+  const totalPnL = realizedPnL + unrealizedPnL;
+  const pnlEl = document.getElementById('acct-pnl');
+  pnlEl.textContent = (totalPnL >= 0 ? '+$' : '-$') + Math.abs(totalPnL).toFixed(2);
+  pnlEl.className = 'stat-val ' + (totalPnL >= 0 ? 'green' : 'white');
+  document.getElementById('acct-pnl-sub').textContent = '$' + realizedPnL.toFixed(2) + ' realized';
+  const wins = resolvedFills.filter(f => (f.profit || 0) > 0).length;
+  const total = resolvedFills.length;
+  const wr = total > 0 ? Math.round(wins / total * 100) : null;
+  document.getElementById('acct-winrate').textContent = wr !== null ? wr + '%' : '—';
+  document.getElementById('acct-winrate-sub').textContent = total > 0 ? wins + 'W / ' + (total - wins) + 'L' : 'no resolved trades';
+}
+
+function addLog(msg) {
+  const log = document.getElementById('log');
+  const now = new Date();
+  const ts = [now.getHours(), now.getMinutes(), now.getSeconds()].map(n => String(n).padStart(2,'0')).join(':');
+  const line = document.createElement('div');
+  line.className = 'log-line';
+  line.innerHTML = '<span class="ts">[' + ts + ']</span> ' + msg;
+  log.appendChild(line);
+  log.scrollTop = log.scrollHeight;
+}
+
+function kellyBet(fairProb, marketPrice, bankroll) {
+  const p = fairProb / 100, q = 1 - p;
+  const b = (100 - marketPrice) / marketPrice;
+  const f = Math.max(0, (b * p - q) / b);
+  return Math.round(f * 0.5 * bankroll);
+}
+
+function generateDemoMarkets() {
+  const templates = [
+    { title: "Fed cuts rates at June 2025 meeting?", category: "economics", base: 42, seriesTicker: "KXFED", expiry: "2025-06-18" },
+    { title: "Fed holds rates at May 2025 meeting?", category: "economics", base: 71, seriesTicker: "KXFED", expiry: "2025-05-07" },
+    { title: "CPI inflation below 3% in April?", category: "economics", base: 58, seriesTicker: "KXINFL", expiry: "2025-04-30" },
+    { title: "US unemployment below 4.2% in May?", category: "economics", base: 55, seriesTicker: "KXUNEMPLOY", expiry: "2025-05-02" },
+    { title: "US enters recession by end of 2025?", category: "economics", base: 29, seriesTicker: "KXRECESSION", expiry: "2025-12-31" },
+    { title: "10-year Treasury yield above 4.5%?", category: "economics", base: 47, seriesTicker: "KXUST10Y", expiry: "2025-03-28" },
+    { title: "Senate passes the budget bill?", category: "politics", base: 33, seriesTicker: "KXSENATE", expiry: "2025-09-30" },
+    { title: "Trump approval rating above 50%?", category: "politics", base: 36, seriesTicker: "KXTRUMPAPPROVAL", expiry: "2025-06-30" },
+    { title: "New executive order on AI by July?", category: "politics", base: 44, seriesTicker: "KXEXECORDER", expiry: "2025-07-31" },
+    { title: "Bitcoin above $90k by end of Q2?", category: "crypto", base: 38, seriesTicker: "KXBTC", expiry: "2025-06-30" },
+    { title: "Ethereum above $3,500 by June 2025?", category: "crypto", base: 45, seriesTicker: "KXETH", expiry: "2025-06-30" },
+    { title: "Crypto market cap above $3T by July?", category: "crypto", base: 52, seriesTicker: "KXCRYPTOCAP", expiry: "2025-07-31" },
+  ];
+  const cat = document.getElementById('category').value;
+  const pool = cat === 'all' ? templates : templates.filter(t => t.category === cat);
+  return pool.map(t => {
+    const marketPrice = Math.max(5, Math.min(95, Math.round(t.base + (Math.random() - 0.35) * 42)));
+    const fairValue = Math.max(5, Math.min(95, t.base + Math.round((Math.random() - 0.5) * 8)));
+    return {
+      title: t.title, seriesTicker: t.seriesTicker,
+      kalshiUrl: 'https://kalshi.com/markets/' + t.seriesTicker.toLowerCase(),
+      category: t.category, marketPrice, fairValue,
+      volume: Math.round(Math.random() * 50000 + 5000),
+      edge: fairValue - marketPrice,
+      expiry: t.expiry || null
+    };
+  });
+}
+
+function setSort(mode) {
+  sortMode = mode;
+  document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+  document.getElementById('sort-' + mode).classList.add('active');
+  const bankroll = parseFloat(document.getElementById('bankroll').value) || 1000;
+  const threshold = parseFloat(document.getElementById('threshold').value) || 8;
+  sortOppStore();
+  renderAll(bankroll, threshold);
+}
+
+function sortOppStore() {
+  oppStore.sort((a, b) => {
+    if (sortMode === 'edge-high') return Math.abs(b.edge) - Math.abs(a.edge);
+    if (sortMode === 'edge-low') return Math.abs(a.edge) - Math.abs(b.edge);
+    if (sortMode === 'expiry') {
+      const aMs = a.expiry ? new Date(a.expiry).getTime() : Infinity;
+      const bMs = b.expiry ? new Date(b.expiry).getTime() : Infinity;
+      return aMs - bMs;
+    }
+    if (sortMode === 'popular') return b.volume - a.volume;
+    return 0;
+  });
+}
+
+function formatExpiry(expiryStr) {
+  if (!expiryStr) return null;
+  const exp = new Date(expiryStr);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const expDay = new Date(exp.getFullYear(), exp.getMonth(), exp.getDate());
+  const diffDays = Math.round((expDay - today) / 86400000);
+  let label, cls;
+  if (diffDays < 0) { label = 'Expired'; cls = 'exp-urgent'; }
+  else if (diffDays === 0) { label = 'Exp Today'; cls = 'exp-urgent'; }
+  else if (diffDays === 1) { label = 'Exp Tomorrow'; cls = 'exp-soon'; }
+  else if (diffDays <= 7) { label = 'Exp ' + diffDays + 'd'; cls = 'exp-soon'; }
+  else {
+    const mo = (exp.getMonth()+1).toString().padStart(2,'0');
+    const dy = exp.getDate().toString().padStart(2,'0');
+    const yr = exp.getFullYear().toString().slice(2);
+    label = 'Exp ' + mo + '/' + dy + '/' + yr; cls = 'exp-normal';
+  }
+  return '<span class="expiry-badge ' + cls + '">' + label + '</span>';
+}
+
+function runScan() {
+  const threshold = parseFloat(document.getElementById('threshold').value) || 8;
+  const bankroll = parseFloat(document.getElementById('bankroll').value) || 1000;
+  scanCount++;
+  document.getElementById('stat-scans').textContent = scanCount;
+  addLog('Scanning Kalshi markets… <span class="ok">(Scan #' + scanCount + ')</span>');
+  setTimeout(() => {
+    const markets = generateDemoMarkets();
+    totalScanned += markets.length;
+    document.getElementById('stat-scanned').textContent = totalScanned;
+    const flagged = markets.filter(m => Math.abs(m.edge) > threshold);
+    if (!flagged.length) {
+      addLog('No edges >' + threshold + '% found. Markets look efficient right now.');
+      return;
+    }
+    let newCount = 0;
+    flagged.forEach(m => {
+      const idx = oppStore.findIndex(o => o.title === m.title);
+      if (idx >= 0) { oppStore[idx] = m; }
+      else {
+        totalEdges++; newCount++;
+        allEdges.push(Math.abs(m.edge));
+        addLog('<span class="ok">EDGE</span> ' + m.title + ' — ' + m.marketPrice + '¢ → ' + m.fairValue + '¢ · +' + Math.abs(m.edge) + '%');
+        oppStore.push(m);
+      }
+    });
+    if (newCount > 0) {
+      const best = Math.max(...flagged.map(m => Math.abs(m.edge)));
+      toast('edge', newCount + ' New Edge' + (newCount > 1 ? 's' : '') + ' Found', 'Largest gap detected: +' + best + '%');
+    }
+    sortOppStore();
+    renderAll(bankroll, threshold);
+    document.getElementById('stat-edges').textContent = oppStore.length;
+    document.getElementById('opp-count').textContent = oppStore.length + ' found';
+    const avg = oppStore.reduce((s, o) => s + Math.abs(o.edge), 0) / oppStore.length;
+    document.getElementById('stat-avg').textContent = avg.toFixed(1) + '%';
+  }, 800);
+}
+
+function renderAll(bankroll, threshold) {
+  const container = document.getElementById('opportunities');
+  container.innerHTML = '';
+  if (!oppStore.length) {
+    container.innerHTML = '<div class="empty-state"><div class="empty-icon">🔍</div><p>No opportunities above ' + threshold + '%.<br>Scanner is watching.</p></div>';
+    return;
+  }
+  const catIcon = { economics: '📊', politics: '🏛️', crypto: '₿' };
+  const catLabel = { economics: 'Economics', politics: 'Politics', crypto: 'Crypto' };
+  oppStore.forEach((m, i) => {
+    const isBuy = m.edge > 0;
+    const edgeAbs = Math.abs(m.edge);
+    const isStrong = edgeAbs >= threshold * 1.5;
+    const kelly = kellyBet(m.fairValue, m.marketPrice, bankroll);
+    const contracts = Math.max(1, Math.floor(kelly / m.marketPrice * 100));
+    const card = document.createElement('div');
+    card.className = 'opp-card ' + (isStrong ? 'strong' : 'moderate');
+    card.style.animationDelay = (i * 0.05) + 's';
+    card.innerHTML = '<div class="card-glow"></div>' +
+      '<div class="opp-top"><div class="opp-left">' +
+      '<div class="cat-pill ' + m.category + '">' + catIcon[m.category] + ' ' + catLabel[m.category] + '</div>' +
+      '<div class="opp-title">' + m.title + '</div>' +
+      '<div class="opp-meta" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
+      '<span>' + m.seriesTicker + ' · Vol $' + m.volume.toLocaleString() + '</span>' +
+      (m.expiry ? formatExpiry(m.expiry) : '') +
+      '</div></div>' +
+      '<div class="opp-edge-box"><div class="edge-lbl">Edge</div>' +
+      '<div class="edge-num ' + (isStrong ? 'strong-c' : 'mod-c') + '">+' + edgeAbs + '%</div></div></div>' +
+      '<div class="opp-bars"><div>' +
+      '<div class="bar-row"><span class="bar-name">Market Price</span><span class="bar-val-label market-c">' + m.marketPrice + '¢</span></div>' +
+      '<div class="bar-track"><div class="bar-fill market-fill" style="width:' + m.marketPrice + '%"></div></div>' +
+      '<div class="bar-sub">Crowd: ' + m.marketPrice + '% probability</div></div><div>' +
+      '<div class="bar-row"><span class="bar-name">Fair Value</span><span class="bar-val-label fair-c">' + m.fairValue + '¢</span></div>' +
+      '<div class="bar-track"><div class="bar-fill fair-fill" style="width:' + m.fairValue + '%"></div></div>' +
+      '<div class="bar-sub">Data: ' + m.fairValue + '% probability</div></div></div>' +
+      '<div class="opp-footer"><div class="kelly-row">' +
+      '<span class="action-chip ' + (isBuy ? 'yes' : 'no') + '">' + (isBuy ? '↑ BUY YES · ' + m.marketPrice + '¢' : '↓ BUY NO · ' + (100 - m.marketPrice) + '¢') + '</span>' +
+      '<span class="kelly-txt">Kelly <strong>$' + kelly + '</strong> · <strong>' + contracts + '</strong> contracts</span></div>' +
+      '<div class="opp-btns">' +
+      '<button class="btn btn-glass btn-sm" onclick="openContract(\'' + m.kalshiUrl.replace(/'/g, "\\'") + '\', \'' + m.title.replace(/'/g, "\\'") + '\')">Open Contract ↗</button>' +
+      '<button class="btn btn-red-glass btn-sm" onclick="dismissOpp(\'' + m.title.replace(/'/g, "\\'") + '\')">Dismiss</button>' +
+      '</div></div>';
+    container.appendChild(card);
+  });
+}
+
+function openContract(url, title) {
+  window.open(url, '_blank');
+  toast('info', 'Opening Contract', title.length > 42 ? title.substring(0,42) + '…' : title);
+}
+
+function dismissOpp(title) {
+  oppStore = oppStore.filter(o => o.title !== title);
+  const threshold = parseFloat(document.getElementById('threshold').value) || 8;
+  const bankroll = parseFloat(document.getElementById('bankroll').value) || 1000;
+  renderAll(bankroll, threshold);
+  document.getElementById('opp-count').textContent = oppStore.length + ' found';
+  toast('warning', 'Opportunity Dismissed', 'Removed from your watchlist.');
+}
+
+function startScanner() {
+  const sec = parseInt(document.getElementById('interval').value);
+  const thresh = document.getElementById('threshold').value;
+  const mode = apiKey ? 'LIVE' : 'DEMO';
+  document.getElementById('start-btn').disabled = true;
+  document.getElementById('stop-btn').disabled = false;
+  document.getElementById('live-dot').classList.add('on');
+  document.getElementById('live-label').textContent = 'Scanning';
+  addLog('<span class="ok">Scanner started.</span> Threshold: ' + thresh + '% · Every ' + sec + 's · ' + mode);
+  toast('success', 'Scanner Started', 'Every ' + sec + 's · Threshold ' + thresh + '% · ' + mode + ' mode');
+  runScan();
+  startCountdown(sec);
+  scanInterval = setInterval(() => { runScan(); startCountdown(sec); }, sec * 1000);
+}
+
+function startCountdown(sec) {
+  clearInterval(countdownTimer);
+  countdown = sec;
+  document.getElementById('live-timer').textContent = countdown + 's';
+  countdownTimer = setInterval(() => {
+    countdown--;
+    document.getElementById('live-timer').textContent = countdown > 0 ? countdown + 's' : '…';
+    if (countdown <= 0) clearInterval(countdownTimer);
+  }, 1000);
+}
+
+function stopScanner() {
+  clearInterval(scanInterval); clearInterval(countdownTimer); scanInterval = null;
+  document.getElementById('start-btn').disabled = false;
+  document.getElementById('stop-btn').disabled = true;
+  document.getElementById('live-dot').classList.remove('on');
+  document.getElementById('live-label').textContent = 'Stopped';
+  document.getElementById('live-timer').textContent = '—';
+  addLog('<span class="warn">Scanner stopped.</span>');
+  toast('warning', 'Scanner Stopped', 'No longer scanning for new edges.');
+}
+
+function clearOpps() {
+  oppStore = []; totalEdges = 0; allEdges = [];
+  document.getElementById('stat-edges').textContent = '0';
+  document.getElementById('stat-avg').textContent = '—';
+  document.getElementById('opp-count').textContent = '0 found';
+  document.getElementById('opportunities').innerHTML = '<div class="empty-state"><div class="empty-icon">🔍</div><p>Cleared. Watching for new edges.</p></div>';
+  toast('info', 'Results Cleared', 'All flagged opportunities removed.');
+}
+
+function runDemo() {
+  addLog('<span class="ok">Demo mode.</span> Using simulated market data.');
+  toast('info', 'Demo Mode Active', 'Running with simulated Kalshi market data.');
+  startScanner();
+}
+</script>
+</body>
+</html>
